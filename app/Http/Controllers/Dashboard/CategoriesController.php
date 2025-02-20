@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+use function PHPUnit\Framework\returnSelf;
+
 class CategoriesController extends Controller
 {
     /**
@@ -18,7 +20,7 @@ class CategoriesController extends Controller
     public function index()
     {
         $categories = Category::all(); // Return Collection Object 
-        
+
         return view('dashboard.categories.index', compact('categories'));
     }
 
@@ -29,7 +31,7 @@ class CategoriesController extends Controller
     {
         $parents = Category::all();
         $category = new Category();
-        return view('dashboard.categories.create', compact('category' , 'parents'));
+        return view('dashboard.categories.create', compact('category', 'parents'));
     }
 
     /**
@@ -42,11 +44,7 @@ class CategoriesController extends Controller
         ]);
 
         $data = $request->except('image');
-        if ($request->hasFile('image')) {
-           $file =  $request->file('image'); // Uploaded file object 
-           $path = $file->store('uploads' , 'public');
-          $data['image'] = $path;
-        }
+        $data['image'] = $this->uploadImage($request);
         $category = Category::create($data);
         //PRG
         return Redirect::route('dashboard.categories.index')
@@ -67,20 +65,20 @@ class CategoriesController extends Controller
     public function edit($id)
     {
         try {
-        $category = Category::findOrFail($id);
-        } catch(Exception $e) {
+            $category = Category::findOrFail($id);
+        } catch (Exception $e) {
             return Redirect::route('dashboard.categories.index')
-            -> with('info' , 'Record not found!');
+                ->with('info', 'Record not found!');
         }
         // SELECT * FROM categories Where 'id' != $id 
         // (AND parent_id IS NULL OR parent_id = id)
         $parents = Category::where('id', '<>', $id) // return all tables except the table 
-        -> where(function($query) use ($id) {
-           $query->whereNull('parent_id')
-            -> orWhere('parent_id', '<>' , $id);    // the parent != $id the present
-        })
-        // ->dd(); 
-        ->get(); 
+            ->where(function ($query) use ($id) {
+                $query->whereNull('parent_id')
+                    ->orWhere('parent_id', '<>', $id);    // the parent != $id the present
+            })
+            // ->dd(); 
+            ->get();
         return view('dashboard.categories.edit', compact('category', 'parents'));
     }
 
@@ -91,19 +89,15 @@ class CategoriesController extends Controller
     public function update(Request $request, string $id)
     {
 
-        $category = Category::findOrFail($id); 
+        $category = Category::findOrFail($id);
         // deleted old image 
         $old_image = $category->image;
         // updated image 
         $data = $request->except('image');
-        if ($request->hasFile('image')) {
-           $file =  $request->file('image'); // Uploaded file object 
-           $path = $file->store('uploads' , 'public');
-          $data['image'] = $path;
-        } 
+        $data['image'] = $this->uploadImage($request);
         $category->update($data);
         // $category->fill($request->all)->save();
-        if ($old_image && isset($data['image'])) {
+        if ($old_image && $data['image']) {
             Storage::disk('public')->delete($old_image);
         }
         return Redirect::route('dashboard.categories.index')
@@ -115,10 +109,25 @@ class CategoriesController extends Controller
      */
     public function destroy(string $id)
     {
-        // $category = Category::findOrFail($id);
-        // $category->delete();
-        Category::destroy($id);
+        $category = Category::findOrFail($id);
+        $category->delete();
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
+        }
+        // Category::destroy($id);
         return Redirect::route('dashboard.categories.index')
-        ->with('success', 'Category deleted!');
+            ->with('success', 'Category deleted!');
+    }
+    protected function uploadImage(Request $request)
+    {
+        if (!$request->hasFile('image')) {
+            return;
+        }
+
+        $file =  $request->file('image'); // Uploaded file object 
+        $file->getClientOriginalName();
+        $path = $file->store('uploads', 'public');
+        return $path;
     }
 }
+ 
