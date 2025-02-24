@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
 use Exception;
 use Illuminate\Http\Request;
@@ -39,6 +40,12 @@ class CategoriesController extends Controller
      */
     public function store(Request $request)
     {
+        $category = new Category();
+        return $category->rules();
+        $request->validate(Category::rules() , [
+            'required' => 'هذا الحقل :attribute فارغ !' ,
+            'unique' => 'هذا الحقل :attribute موجود بالفعل!'
+        ]);
         $request->merge([
             'slug' => Str::slug($request->post('name'))
         ]);
@@ -86,18 +93,21 @@ class CategoriesController extends Controller
      * 
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(CategoryRequest $request, string $id)
     {
-
+        $clean_data = $request->validate(Category::rules($id));
         $category = Category::findOrFail($id);
         // deleted old image 
         $old_image = $category->image;
         // updated image 
         $data = $request->except('image');
-        $data['image'] = $this->uploadImage($request);
+        $new_image = $this->uploadImage($request);
+        if($new_image) {
+            $data['image'] = $new_image;
+        }
         $category->update($data);
         // $category->fill($request->all)->save();
-        if ($old_image && $data['image']) {
+        if ($old_image && $new_image) {
             Storage::disk('public')->delete($old_image);
         }
         return Redirect::route('dashboard.categories.index')
@@ -130,4 +140,3 @@ class CategoriesController extends Controller
         return $path;
     }
 }
- 
