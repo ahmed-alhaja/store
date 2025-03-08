@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Models\Category;
+use App\View\Components\Nav;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -20,8 +22,17 @@ class CategoriesController extends Controller
      */
     public function index()
     {
-        $categories = Category::all(); // Return Collection Object 
-
+        // $newactive = new Nav(); 
+        // return $newactive->active; 
+        $request = request();
+        $query = Category::query();
+        if ($name = $request->query('name')) {
+            $query->where('name' , 'LIKE' , "%{$name}%");
+        }
+        if ($status = $request->query('status')) {
+            $query->where('status' , $status);
+        }
+        $categories = $query->paginate(3); // Return Collection Object 
         return view('dashboard.categories.index', compact('categories'));
     }
 
@@ -40,8 +51,6 @@ class CategoriesController extends Controller
      */
     public function store(Request $request)
     {
-        $category = new Category();
-        return $category->rules();
         $request->validate(Category::rules() , [
             'required' => 'هذا الحقل :attribute فارغ !' ,
             'unique' => 'هذا الحقل :attribute موجود بالفعل!'

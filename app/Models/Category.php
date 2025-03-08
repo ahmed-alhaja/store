@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Rules\Filter;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rule;
@@ -25,7 +26,12 @@ class Category extends Model
                 'required',
                 'string',
                 'min:3,max:255',
-                Rule::unique('categories' , 'name')->ignore($id)
+                Rule::unique('categories' , 'name')->ignore($id) , 
+                // function ($atrr , $value , $fails) {
+                //     if (strtolower($value) == 'laravel')  
+                //     $fails('this name is forbiden');
+                // } ,
+                new Filter(['laravel' , 'php' , 'MySql'])
             ],
             'parent_id' => [
                 'nullable',

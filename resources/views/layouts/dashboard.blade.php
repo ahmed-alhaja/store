@@ -209,7 +209,8 @@ scratch. This page gets rid of all links and provides the needed markup only.
                         </div>
                     </div>
                 </div>
-                @include('layouts.partials.navbar')
+                {{-- @include('layouts.partials.navbar')  --}}
+                <x-nav/>
             </div>
             <!-- /.sidebar -->
         </aside>
