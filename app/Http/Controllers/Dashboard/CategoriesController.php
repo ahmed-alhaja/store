@@ -25,14 +25,10 @@ class CategoriesController extends Controller
         // $newactive = new Nav(); 
         // return $newactive->active; 
         $request = request();
-        $query = Category::query();
-        if ($name = $request->query('name')) {
-            $query->where('name' , 'LIKE' , "%{$name}%");
-        }
-        if ($status = $request->query('status')) {
-            $query->where('status' , $status);
-        }
-        $categories = $query->paginate(3); // Return Collection Object 
+        // return $request->query();
+        $categories = Category::Filter($request->query())
+        ->latest()
+        ->paginate(3); // Return Collection Object 
         return view('dashboard.categories.index', compact('categories'));
     }
 
